@@ -10,7 +10,7 @@ const PORT = 5000;
 // Define a route: when someone visits the root URL ("/") with a GET request,
 // run this function and send back a response
 app.get('/', (req, res) => {
-  res.send('Hello from the Apartment Manager backend!');
+  res.send('Hello v2 from the backend!');
 });
 
 // Start the server listening on PORT
