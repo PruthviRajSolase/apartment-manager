@@ -12,6 +12,7 @@ CREATE TABLE users (
     society_id INTEGER NOT NULL REFERENCES societies(id),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
+    mobile_number VARCHAR(15) UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'resident',
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -37,3 +38,4 @@ CREATE TABLE issues (
     status VARCHAR(50) NOT NULL DEFAULT 'open',
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
