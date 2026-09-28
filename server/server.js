@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./db');
 const authRoutes = require('./routes/auth');
+const verifyToken = require('./middleware/auth');
 
 const app = express();
 const PORT = 5000;
@@ -14,9 +15,12 @@ app.get('/', (req, res) => {
   res.send('Hello from the Apartment Manager backend!');
 });
 
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', verifyToken, async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM users');
+    const result = await db.query(
+      'SELECT id, name, email, role, society_id FROM users WHERE society_id = $1',
+      [req.user.societyId]
+    );
     res.json(result.rows);
   } catch (err) {
     console.error(err);
