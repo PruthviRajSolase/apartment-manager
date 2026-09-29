@@ -1,7 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const db = require('../db');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const db = require('../db');
+const verifyToken = require('../middleware/auth');
+const { SESSION_IDLE_MINUTES } = require('../config');
 
 const router = express.Router();
 
@@ -61,6 +64,7 @@ router.post('/login', async (req, res) => {
   }
 
   try {
+    // Stage 1: find the user
     const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
 
     if (result.rows.length === 0) {
@@ -68,14 +72,36 @@ router.post('/login', async (req, res) => {
     }
 
     const user = result.rows[0];
+
+    // Stage 2: check the password
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordMatches) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // Stage 3: try to claim the account's single session
+    const sessionId = crypto.randomUUID();
+
+    const claimed = await db.query(
+      `UPDATE users SET session_id = $1, last_active_at = NOW()
+       WHERE id = $2
+         AND (session_id IS NULL
+              OR last_active_at IS NULL
+              OR last_active_at < NOW() - make_interval(mins => $3::int))
+       RETURNING id`,
+      [sessionId, user.id, SESSION_IDLE_MINUTES]
+    );
+
+    if (claimed.rows.length === 0) {
+      return res.status(409).json({
+        error: `This account is already logged in on another device. It can be used again after that session logs out or is idle for ${SESSION_IDLE_MINUTES} minutes.`,
+      });
+    }
+
+    // Stage 4: issue the token
     const token = jwt.sign(
-      { userId: user.id, societyId: user.society_id, role: user.role },
+      { userId: user.id, societyId: user.society_id, role: user.role, sid: sessionId },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
@@ -94,6 +120,19 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+router.post('/logout', verifyToken, async (req, res) => {
+  try {
+    await db.query(
+      'UPDATE users SET session_id = NULL, last_active_at = NULL WHERE id = $1 AND session_id = $2',
+      [req.user.userId, req.user.sid]
+    );
+    res.json({ message: 'Logged out' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Logout failed' });
   }
 });
 

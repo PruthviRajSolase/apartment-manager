@@ -16,7 +16,15 @@ function App() {
     setUser(newUser)
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await fetch('http://localhost:5000/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch (err) {
+      console.error('Logout request failed:', err)
+    }
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setToken(null)

@@ -3,6 +3,8 @@ CREATE TABLE societies (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     address TEXT,
+    session_id UUID,
+    last_active_at TIMESTAMPTZ,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -15,6 +17,8 @@ CREATE TABLE users (
     mobile_number VARCHAR(15) UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'resident',
+    session_id UUID,
+    last_active_at TIMESTAMPTZ,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -25,6 +29,8 @@ CREATE TABLE payments (
     user_id INTEGER NOT NULL REFERENCES users(id),
     amount NUMERIC(10, 2) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    session_id UUID,
+    last_active_at TIMESTAMPTZ,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -36,6 +42,8 @@ CREATE TABLE issues (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'open',
+    session_id UUID,
+    last_active_at TIMESTAMPTZ,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
