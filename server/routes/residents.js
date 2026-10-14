@@ -37,8 +37,8 @@ router.post('/', verifyToken, requireRole('admin'), async (req, res) => {
     const placeholderEmail = `${mobileNumber}@no-email.local`;
 
     const result = await db.query(
-      `INSERT INTO users (society_id, unit_id, name, email, mobile_number, password_hash, role)
-       VALUES ($1, $2, $3, $4, $5, $6, 'resident')
+      `INSERT INTO users (society_id, unit_id, name, email, mobile_number, password_hash, role, must_change_password)
+       VALUES ($1, $2, $3, $4, $5, $6, 'resident', true)
        RETURNING id, name, mobile_number, unit_id, role`,
       [req.user.societyId, unitId, name, placeholderEmail, mobileNumber, passwordHash]
     );
