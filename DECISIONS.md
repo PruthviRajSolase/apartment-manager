@@ -53,3 +53,4 @@ Automated payment verification/receipts, notifications (email/SMS/WhatsApp), mai
 - The project is hosted publicly at `https://github.com/PruthviRajSolase/apartment-manager`. Secrets stay out via `.gitignore`.
 - `GET /api/users` is admin-only; residents must not call it.
 - Force logout is a separate admin action from password reset: reset also ends the session, while force logout ends a session without changing any password.
+- The global 401 clear-and-redirect in `api.js` does not apply to `/api/auth/login` or `/api/auth/signup`; those must show their own error messages on the same screen.

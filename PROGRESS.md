@@ -84,6 +84,10 @@ Frontend:
 - 17 API checks: reset returns a 10-character one-time password with no hash, old token becomes 401, old password fails, new temp password logs in and re-triggers the forced password gate, role check works, force logout makes the token 401 and clears the session flag, admin B cannot reset or log out society A's resident (404), bad id 400, resident cannot call admin routes.
 - Source scanned: no password or temp password is logged or stored in localStorage. DB counts unchanged after cleanup.
 
+### Login-loop fix — automated (all passed)
+- A failed login previously triggered the global 401 handler, which cleared storage and reloaded the page, hiding the error and returning to login. `client/src/api.js` now exempts `/api/auth/login` and `/api/auth/signup` from that redirect.
+- 6 focused checks with stubbed browser globals: failed login keeps the session and shows its error, normal-route 401 still clears storage and redirects, signup 401 does not redirect. Lint + build pass.
+
 ### Earlier Phase 4 verification — automated (all passed)
 - `npm run lint` and `npm run build` in `client/`.
 - 28 API-level checks against a temporary local server with throwaway data: signup of two societies, admin/mobile/resident login, unit and resident creation, one-time password response with no hash, duplicate mobile 409, 10-digit validation, cross-society isolation of units/residents and unit-ownership check, server-side password gate on three different routes (403), logout exemption, set-initial-password and gate release, wrong password 401, second-login 409, invalid token 401, logout/re-login.
