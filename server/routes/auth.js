@@ -8,12 +8,22 @@ const { SESSION_IDLE_MINUTES } = require('../config');
 
 const router = express.Router();
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 router.post('/signup', async (req, res) => {
   const { societyName, societyAddress, adminName, adminEmail, password } = req.body;
 
   // Basic validation — reject early if required fields are missing
   if (!societyName || !adminName || !adminEmail || !password) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  if (!EMAIL_PATTERN.test(adminEmail)) {
+    return res.status(400).json({ error: 'Enter a valid email address' });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
 
   const client = await db.getClient();

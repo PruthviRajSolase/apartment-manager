@@ -38,7 +38,7 @@ function App() {
   }
 
   useEffect(() => {
-    if (!token) return
+    if (!token || user?.role !== 'admin') return
     let active = true
 
     api('/api/users').then(({ response, data }) => {
@@ -125,12 +125,16 @@ function App() {
         <section className="card">
           <h2>Welcome, {user.name}</h2>
           <p>Use the buttons above to move around the app.</p>
-          <h2>Users in your society</h2>
-          <ul className="list">
-            {users.map((item) => (
-              <li key={item.id}>{item.name} — {item.email} ({item.role})</li>
-            ))}
-          </ul>
+          {user.role === 'admin' && (
+            <>
+              <h2>Users in your society</h2>
+              <ul className="list">
+                {users.map((item) => (
+                  <li key={item.id}>{item.name} — {item.email} ({item.role})</li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       )}
     </main>

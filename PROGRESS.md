@@ -43,6 +43,13 @@ Frontend:
 - Simple large-button styling, role-based nav, responsive layout.
 - 10-digit mobile validation on both client and server.
 
+### Cleanup commit
+- `GET /api/users` is now admin-only (`verifyToken` + `requireRole('admin')`), still society scoped.
+- Frontend no longer calls `/api/users` as a resident and hides the user list for them.
+- Signup now validates email format and a minimum 8-character password.
+- Replaced the single `server/db/schema.sql` with numbered files in `server/db/migrations/` (001 societies through 005 issues) plus a README. These describe the current schema for fresh installs; they are not run automatically and were not applied to the live DB.
+- GitHub remote: `origin` → `https://github.com/PruthviRajSolase/apartment-manager.git` (public).
+
 ### Housekeeping
 - Created `PROGRESS.md`, `DECISIONS.md`, `PROJECT.md`.
 - Removed an accidental duplicate `/set-initial-password` route from `server/routes/auth.js`.

@@ -43,6 +43,12 @@ Recorded choices. Do not reverse any of these without asking the owner first.
 ## Post-v1 ideas (do NOT build now)
 Automated payment verification/receipts, notifications (email/SMS/WhatsApp), maintenance reminders, auto monthly maintenance generation, advanced reports, announcements, staff/vendor management, visitor/parking management, document management, multi-society admin features, subscription SaaS model.
 
+## Database migrations
+- The schema is stored as numbered files in `server/db/migrations/`, one file per table (001 societies, 002 units, 003 users, 004 payments, 005 issues), applied in that order on a fresh database.
+- They are documentation for fresh installs/disaster recovery only. There is no automatic migration runner, and they were NOT applied to the existing `apartment_manager` database.
+
 ## Session decisions (2026-11-23)
 - The original brief is stale about Phase 4. Code + database are treated as the source of truth.
 - The duplicated `/set-initial-password` route in `server/routes/auth.js` was an accidental paste and was removed.
+- The project is hosted publicly at `https://github.com/PruthviRajSolase/apartment-manager`. Secrets stay out via `.gitignore`.
+- `GET /api/users` is admin-only; residents must not call it.

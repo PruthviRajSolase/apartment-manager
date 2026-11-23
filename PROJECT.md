@@ -78,7 +78,8 @@ Backend / database:
 - Single-session logic: second login blocked (409), logout frees the session, 30-min idle timeout frees it without explicit logout.
 - `must_change_password` is enforced server-side in `verifyToken` on all protected routes except logout and set-initial-password.
 - Units + residents routes exist (admin-only writes, society-scoped reads, including `GET /api/residents`).
-- `/api/users` returns real DB rows scoped by the token's society.
+- `GET /api/users` is admin-only and returns real DB rows scoped by the token's society.
+- The schema lives in numbered files under `server/db/migrations/` (one per table). They are for fresh installs only and are not run automatically; the existing database was not touched when the old single `schema.sql` was split.
 
 Frontend:
 - Vite + React app in `client/`, ESLint configured.
