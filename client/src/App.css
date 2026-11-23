@@ -292,3 +292,27 @@ button:disabled {
   border-radius: 8px;
   display: inline-block;
 }
+
+.resident-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.resident-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.resident-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.resident-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

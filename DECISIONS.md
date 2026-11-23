@@ -20,7 +20,7 @@ Recorded choices. Do not reverse any of these without asking the owner first.
 - No open signup for residents. Admin pre-creates unit numbers and assigns members.
 - Login is mobile number + password for residents. Admins currently log in with email + password; the backend accepts either identifier in one route.
 - OTP was dropped to avoid SMS cost.
-- Credential flow: system-generated initial credentials, forced password change on first login (`must_change_password`), after which users cannot change their own password — only a higher authority can reset it. (The higher-authority reset route is NOT built yet.)
+- Credential flow: system-generated initial credentials, forced password change on first login (`must_change_password`), after which users cannot change their own password — only a higher authority can reset it. Admin reset issues a new one-time temp password, sets `must_change_password = true`, and clears the resident's session so the old token dies immediately.
 - Resident creation currently returns the temporary password in the API response. No SMS delivery — notifications are post-v1.
 
 ## Sessions
@@ -52,3 +52,4 @@ Automated payment verification/receipts, notifications (email/SMS/WhatsApp), mai
 - The duplicated `/set-initial-password` route in `server/routes/auth.js` was an accidental paste and was removed.
 - The project is hosted publicly at `https://github.com/PruthviRajSolase/apartment-manager`. Secrets stay out via `.gitignore`.
 - `GET /api/users` is admin-only; residents must not call it.
+- Force logout is a separate admin action from password reset: reset also ends the session, while force logout ends a session without changing any password.

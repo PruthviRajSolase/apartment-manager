@@ -42,7 +42,7 @@ Resident onboarding:
 - No open signup for residents. Admin pre-creates room/unit numbers and assigns members.
 - System sends login credentials to the resident's mobile number. (Not sent automatically yet — the temporary password is shown once on screen; SMS is post-v1.)
 - Login is mobile number + password. OTP was dropped to avoid SMS cost.
-- Credential flow: initial credentials, forced password change on first login, after which users cannot change their own password; only a higher authority can reset it. (Higher-authority reset route is not built yet.)
+- Credential flow: initial credentials, forced password change on first login, after which users cannot change their own password; only a higher authority can reset it. Admin reset issues a new one-time temporary password, sets `must_change_password = true`, and ends the resident's current session. A separate force-logout action ends a session without changing the password.
 
 Single active session per account:
 - A second login is blocked while the account has an active session.
@@ -85,7 +85,7 @@ Frontend:
 - Vite + React app in `client/`, ESLint configured.
 - Login accepts mobile number or email; friendly errors for wrong details, duplicate mobile, and blocked second login.
 - Forced first-login password-change screen.
-- Admin screens for units and residents, including one-time display of the temporary password.
+- Admin screens for units and residents, including one-time display of the temporary password, admin password reset and a force-logout button per resident.
 - Small `api.js` helper adds the token and redirects to login on 401.
 - 10-digit mobile validation on both client and server.
 

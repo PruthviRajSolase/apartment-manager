@@ -30,7 +30,8 @@ The original chat brief was stale about Phase 4; the correction is recorded in `
 Backend:
 - `units` table with `UNIQUE(society_id, unit_number)`.
 - `GET /api/units`, `POST /api/units` (admin only).
-- `GET /api/residents` (admin only, society scoped, never selects a password hash), `POST /api/residents` (admin only; verifies the unit belongs to the caller's society; 10-digit mobile validation; friendly 409 on duplicate mobile).
+- `GET /api/residents` (admin only, society scoped, never selects a password hash, reports `must_change_password` and `has_active_session`), `POST /api/residents` (admin only; verifies the unit belongs to the caller's society; 10-digit mobile validation; friendly 409 on duplicate mobile).
+- `POST /api/residents/:id/reset-password` (admin only, own society only) — new bcrypt hash, new one-time temp password, `must_change_password = true`, and session cleared. `POST /api/residents/:id/force-logout` (admin only, own society only) — clears the session without changing the password.
 - Temporary password: bcrypt hash stored, plain value returned once in the create response, never logged or stored.
 - `requireRole(...)` middleware.
 - Backend commits: `fe8d298`, `a682323`.
@@ -40,6 +41,7 @@ Frontend:
 - `client/src/api.js` attaches the Bearer token, handles network failures, and clears the session + redirects to login on 401.
 - Forced first-login password screen (`SetInitialPassword.jsx`).
 - Admin screen (`ManageResidents.jsx`) to add/list units and residents, with a unit dropdown and a one-time temporary-password panel.
+- Each resident row has **Reset password** and **Force logout** buttons with confirmation prompts; both reuse the same one-time password panel where relevant.
 - Simple large-button styling, role-based nav, responsive layout.
 - 10-digit mobile validation on both client and server.
 
@@ -57,14 +59,12 @@ Frontend:
 
 ## Not done yet
 - Signup screen (society creation is still Thunder Client / API only).
-- Admin-only password reset after the initial password is set.
 - Actual delivery of credentials to the resident's mobile number (shown on screen only).
 - Phases 5–10: maintenance, issues, billing, expenses, dashboards/reports, testing & deployment.
 
 ## Next
-1. Admin-only password reset.
-2. Signup screen.
-3. Phase 5 maintenance.
+1. Signup screen.
+2. Phase 5 maintenance.
 
 ## Testing notes
 - Backend: `cd server && npm run dev` (port 5000).
@@ -74,7 +74,17 @@ Frontend:
 - See "Verification" below for what was automated on 2026-11-23 and what still needs a human at the keyboard.
 
 ## Verification (2026-11-23)
-Automated (all passed):
+### Cleanup commit — automated (all passed)
+- `npm run lint` and `npm run build`.
+- 10 API checks: bad email and short password rejected at signup, valid signup still works, admin can use `/api/users`, resident gets a role-based 403, resident creation/login/password set still work.
+- Confirmed no code references the removed `schema.sql`; DB counts unchanged after throwaway data cleanup.
+
+### Reset + force logout commit — automated (all passed)
+- `npm run lint` and `npm run build`.
+- 17 API checks: reset returns a 10-character one-time password with no hash, old token becomes 401, old password fails, new temp password logs in and re-triggers the forced password gate, role check works, force logout makes the token 401 and clears the session flag, admin B cannot reset or log out society A's resident (404), bad id 400, resident cannot call admin routes.
+- Source scanned: no password or temp password is logged or stored in localStorage. DB counts unchanged after cleanup.
+
+### Earlier Phase 4 verification — automated (all passed)
 - `npm run lint` and `npm run build` in `client/`.
 - 28 API-level checks against a temporary local server with throwaway data: signup of two societies, admin/mobile/resident login, unit and resident creation, one-time password response with no hash, duplicate mobile 409, 10-digit validation, cross-society isolation of units/residents and unit-ownership check, server-side password gate on three different routes (403), logout exemption, set-initial-password and gate release, wrong password 401, second-login 409, invalid token 401, logout/re-login.
 - Throwaway rows were deleted afterwards; DB counts returned to 2 societies / 5 users / 3 units / 0 payments / 0 issues.
@@ -85,3 +95,5 @@ Manual (need a real browser):
 - Duplicate-mobile and blocked-login error messages rendering in the UI.
 - 401 redirect behaviour from a stale/expired token.
 - Visual check on a narrow screen for older users.
+- Clicking **Reset password** and **Force logout** for a resident, including the confirmation prompts and the one-time password panel.
+- Confirming a resident who has been force-logged-out is sent back to the login screen.

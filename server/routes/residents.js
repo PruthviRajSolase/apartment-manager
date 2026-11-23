@@ -1,29 +1,28 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const crypto = require('crypto');
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
+const generateTempPassword = require('../utils/tempPassword');
+const { SESSION_IDLE_MINUTES } = require('../config');
 
 const router = express.Router();
 
 const MOBILE_PATTERN = /^\d{10}$/;
 
-function generateTempPassword() {
-  // 10 hex characters — fixed length, no characters that get lost when read aloud.
-  return crypto.randomBytes(8).toString('hex').slice(0, 10);
-}
-
 // List residents — admin only. Never selects password_hash.
 router.get('/', verifyToken, requireRole('admin'), async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT u.id, u.name, u.mobile_number, u.unit_id, un.unit_number, u.created_at
+      `SELECT u.id, u.name, u.mobile_number, u.unit_id, un.unit_number, u.created_at,
+              u.must_change_password,
+              (u.session_id IS NOT NULL
+               AND u.last_active_at > NOW() - make_interval(mins => $2::int)) AS has_active_session
        FROM users u
        LEFT JOIN units un ON un.id = u.unit_id AND un.society_id = u.society_id
        WHERE u.society_id = $1 AND u.role = 'resident'
        ORDER BY un.unit_number, u.name`,
-      [req.user.societyId]
+      [req.user.societyId, SESSION_IDLE_MINUTES]
     );
     res.json(result.rows);
   } catch (err) {
@@ -81,6 +80,70 @@ router.post('/', verifyToken, requireRole('admin'), async (req, res) => {
     }
     console.error(err);
     res.status(500).json({ error: 'Failed to create resident' });
+  }
+});
+
+// Reset a resident's password — admin only, own society only.
+// Generating a new one-time password also ends their current session.
+router.post('/:id/reset-password', verifyToken, requireRole('admin'), async (req, res) => {
+  const residentId = Number(req.params.id);
+
+  if (!Number.isInteger(residentId)) {
+    return res.status(400).json({ error: 'Invalid resident id' });
+  }
+
+  try {
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    const result = await db.query(
+      `UPDATE users
+       SET password_hash = $1, must_change_password = true,
+           session_id = NULL, last_active_at = NULL
+       WHERE id = $2 AND society_id = $3 AND role = 'resident'
+       RETURNING id`,
+      [passwordHash, residentId, req.user.societyId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Resident not found in your society' });
+    }
+
+    // Plain password is returned once and never logged.
+    res.json({
+      message: 'Password reset',
+      temporaryPassword: tempPassword,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Force a resident out of their current session — admin only, own society only.
+router.post('/:id/force-logout', verifyToken, requireRole('admin'), async (req, res) => {
+  const residentId = Number(req.params.id);
+
+  if (!Number.isInteger(residentId)) {
+    return res.status(400).json({ error: 'Invalid resident id' });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE users SET session_id = NULL, last_active_at = NULL
+       WHERE id = $1 AND society_id = $2 AND role = 'resident'
+       RETURNING id`,
+      [residentId, req.user.societyId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Resident not found in your society' });
+    }
+
+    res.json({ message: 'Resident logged out' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to log out resident' });
   }
 });
 

@@ -22,6 +22,7 @@ function ManageResidents() {
   const [mobileNumber, setMobileNumber] = useState('')
   const [unitId, setUnitId] = useState('')
   const [tempPassword, setTempPassword] = useState(null)
+  const [passwordTitle, setPasswordTitle] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
@@ -109,6 +110,7 @@ function ManageResidents() {
     }
 
     // Shown once, held only in memory. Never saved to localStorage or logged.
+    setPasswordTitle('Save this password now')
     setTempPassword(data.temporaryPassword)
     setName('')
     setMobileNumber('')
@@ -116,11 +118,57 @@ function ManageResidents() {
     load()
   }
 
+  async function handleResetPassword(resident) {
+    setError('')
+    setNotice('')
+    if (!window.confirm(`Reset the password for ${resident.name}? Their current login will stop working.`)) {
+      return
+    }
+
+    setLoading(true)
+    const { response, data } = await api(`/api/residents/${resident.id}/reset-password`, {
+      method: 'POST',
+    })
+    setLoading(false)
+
+    if (!response || !response.ok) {
+      setError(data.error || 'Could not reset the password.')
+      return
+    }
+
+    setPasswordTitle('New temporary password')
+    setTempPassword(data.temporaryPassword)
+    setNotice(`${resident.name}'s password was reset.`)
+    load()
+  }
+
+  async function handleForceLogout(resident) {
+    setError('')
+    setNotice('')
+    if (!window.confirm(`Log out ${resident.name} now? They will need to log in again.`)) {
+      return
+    }
+
+    setLoading(true)
+    const { response, data } = await api(`/api/residents/${resident.id}/force-logout`, {
+      method: 'POST',
+    })
+    setLoading(false)
+
+    if (!response || !response.ok) {
+      setError(data.error || 'Could not log out the resident.')
+      return
+    }
+
+    setNotice(`${resident.name} has been logged out.`)
+    load()
+  }
+
   return (
     <div>
       {tempPassword && (
         <section className="card temp-password">
-          <h2>Save this password now</h2>
+          <h2>{passwordTitle}</h2>
           <p>This is the only time it will be shown. Give it to the resident.</p>
           <p className="password-value">{tempPassword}</p>
           <p><button type="button" onClick={() => setTempPassword(null)}>I have saved it</button></p>
@@ -191,10 +239,24 @@ function ManageResidents() {
 
       <section className="card">
         <h2>Residents</h2>
-        <ul className="list">
+        <ul className="list resident-list">
           {residents.map((resident) => (
             <li key={resident.id}>
-              {resident.name} — {resident.mobile_number} — {resident.unit_number || 'No unit'}
+              <div className="resident-row">
+                <span>
+                  {resident.name} — {resident.mobile_number} — {resident.unit_number || 'No unit'}
+                  {resident.must_change_password && ' — password change pending'}
+                  {resident.has_active_session && ' — logged in'}
+                </span>
+                <span className="resident-actions">
+                  <button type="button" disabled={loading} onClick={() => handleResetPassword(resident)}>
+                    Reset password
+                  </button>
+                  <button type="button" disabled={loading} onClick={() => handleForceLogout(resident)}>
+                    Force logout
+                  </button>
+                </span>
+              </div>
             </li>
           ))}
         </ul>
