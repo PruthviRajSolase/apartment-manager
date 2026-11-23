@@ -63,6 +63,10 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email or mobile number, and password, are required' });
   }
 
+  if (!email && !/^\d{10}$/.test(mobileNumber)) {
+    return res.status(400).json({ error: 'Mobile number must be exactly 10 digits' });
+  }
+
   try {
     // Stage 1: find the user, by whichever identifier was provided
     const result = email

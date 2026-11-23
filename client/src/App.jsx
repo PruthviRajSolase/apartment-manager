@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
+import api, { clearSession } from './api'
 import Login from './Login'
+import SetInitialPassword from './SetInitialPassword'
+import ManageResidents from './ManageResidents'
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token'))
@@ -8,75 +11,129 @@ function App() {
     return saved ? JSON.parse(saved) : null
   })
   const [users, setUsers] = useState([])
+  const [view, setView] = useState('home')
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [error, setError] = useState('')
+
+  function saveUser(nextUser) {
+    localStorage.setItem('user', JSON.stringify(nextUser))
+    setUser(nextUser)
+  }
 
   function handleLogin(newToken, newUser) {
     localStorage.setItem('token', newToken)
-    localStorage.setItem('user', JSON.stringify(newUser))
+    saveUser(newUser)
     setToken(newToken)
-    setUser(newUser)
+    setView('home')
+    setError('')
   }
 
   async function handleLogout() {
-    try {
-      await fetch('http://localhost:5000/api/auth/logout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-    } catch (err) {
-      console.error('Logout request failed:', err)
-    }
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    await api('/api/auth/logout', { method: 'POST' })
+    clearSession()
     setToken(null)
     setUser(null)
     setUsers([])
+    setView('home')
   }
 
   useEffect(() => {
     if (!token) return
+    let active = true
 
-    fetch('http://localhost:5000/api/users', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((response) => {
-        if (response.status === 401) {
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          setToken(null)
-          setUser(null)
-          return null
+    api('/api/users').then(({ response, data }) => {
+      if (!active) return
+      if (!response) {
+        setError('Could not reach the server.')
+        return
+      }
+      if (response.status === 403 && data.code === 'PASSWORD_CHANGE_REQUIRED') {
+        if (!user?.must_change_password) {
+          saveUser({ ...user, must_change_password: true })
         }
-        return response.json()
-      })
-      .then((data) => {
-        if (data) setUsers(data)
-      })
-      .catch((error) => console.error('Error fetching users:', error))
-  }, [token])
+        return
+      }
+      if (!response.ok) {
+        setError(data.error || 'Could not load users.')
+        return
+      }
+      setUsers(data)
+    })
 
-  if (!token) {
+    return () => { active = false }
+  }, [token, refreshKey, user])
+
+  if (!token || !user) {
     return (
-      <div>
+      <main className="app">
         <h1>Apartment Manager</h1>
         <Login onLogin={handleLogin} />
-      </div>
+      </main>
+    )
+  }
+
+  if (user.must_change_password) {
+    return (
+      <main className="app">
+        <h1>Apartment Manager</h1>
+        <SetInitialPassword
+          user={user}
+          onPasswordSet={(updated) => {
+            saveUser(updated)
+            setRefreshKey((key) => key + 1)
+          }}
+          onLogout={handleLogout}
+        />
+      </main>
     )
   }
 
   return (
-    <div>
-      <h1>Apartment Manager</h1>
-      <p>Logged in as {user?.name} ({user?.role})</p>
-      <button onClick={handleLogout}>Log out</button>
-      <h2>Users in your society</h2>
-      <ul>
-        {users.map((u) => (
-          <li key={u.id}>
-            {u.name} — {u.email} ({u.role})
-          </li>
-        ))}
-      </ul>
-    </div>
+    <main className="app">
+      <header className="topbar">
+        <h1>Apartment Manager</h1>
+        <div>
+          <span>{user.name} ({user.role})</span>{' '}
+          <button type="button" onClick={handleLogout}>Log out</button>
+        </div>
+      </header>
+
+      {error && <p className="error">{error}</p>}
+
+      <nav className="nav">
+        <button
+          type="button"
+          className={view === 'home' ? 'active' : ''}
+          onClick={() => setView('home')}
+        >
+          Home
+        </button>
+        {user.role === 'admin' && (
+          <button
+            type="button"
+            className={view === 'manage' ? 'active' : ''}
+            onClick={() => setView('manage')}
+          >
+            Units &amp; residents
+          </button>
+        )}
+      </nav>
+
+      {view === 'manage' && user.role === 'admin' ? (
+        <ManageResidents />
+      ) : (
+        <section className="card">
+          <h2>Welcome, {user.name}</h2>
+          <p>Use the buttons above to move around the app.</p>
+          <h2>Users in your society</h2>
+          <ul className="list">
+            {users.map((item) => (
+              <li key={item.id}>{item.name} — {item.email} ({item.role})</li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </main>
   )
 }
 

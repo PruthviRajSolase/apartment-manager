@@ -182,3 +182,113 @@
     border-right-color: var(--border);
   }
 }
+
+/* App screens — large, simple controls that are easy to tap and read */
+.app {
+  padding: 24px 16px 48px;
+  flex-grow: 1;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.topbar h1 {
+  font-size: 28px;
+  margin: 0;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.nav button.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.form-row label {
+  font-weight: 600;
+}
+
+.error {
+  color: #b00020;
+  margin: 12px 0;
+  font-weight: 600;
+}
+
+.notice {
+  color: #176b3a;
+  margin: 12px 0;
+  font-weight: 600;
+}
+
+.list {
+  text-align: left;
+  line-height: 1.8;
+  padding-left: 22px;
+}
+
+.temp-password {
+  border-color: var(--accent);
+}
+
+.password-value {
+  font-family: var(--mono);
+  font-size: 28px;
+  letter-spacing: 3px;
+  padding: 12px;
+  background: var(--code-bg);
+  border-radius: 8px;
+  display: inline-block;
+}
